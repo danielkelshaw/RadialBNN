@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from torch import Tensor
 import torch.nn.functional as F
+from torch import Tensor
 
 from radialbnn.distributions import Gaussian
 
@@ -32,8 +32,14 @@ class RadialLayer(nn.Module):
         w_mu = torch.empty(out_features, in_features).uniform_(-0.2, 0.2)
         w_rho = torch.empty(out_features, in_features).uniform_(-5.0, -4.0)
 
+        bias_mu = torch.empty(out_features).uniform_(-0.2, 0.2)
+        bias_rho = torch.empty(out_features).uniform_(-5.0, -4.0)
+
         self.w_mu = nn.Parameter(w_mu)
         self.w_rho = nn.Parameter(w_rho)
+
+        self.bias_mu = nn.Parameter(bias_mu)
+        self.bias_rho = nn.Parameter(bias_rho)
 
         self.prior = Gaussian(0, 1)
         self.epsilon_normal = torch.distributions.Normal(0, 1)
@@ -55,16 +61,39 @@ class RadialLayer(nn.Module):
             Output from the Radial Linear Layer.
         """
 
+        # calculating sigma from rho
         w_std = torch.log(1 + torch.exp(self.w_rho))
+        bias_std = torch.log(1 + torch.exp(self.bias_rho))
 
-        eps_mfvi = self.epsilon_normal.sample(self.w_mu.size())
-        eps_norm = torch.norm(eps_mfvi, p=2, dim=1).unsqueeze(1)
-        r_mfvi = torch.randn(1)
+        # draw weight from radial distribution
+        w_eps_mfvi = self.epsilon_normal.sample(self.w_mu.size())
+        w_eps_norm = torch.norm(w_eps_mfvi, p=2, dim=0)
 
-        w = torch.addcmul(self.w_mu, eps_mfvi / eps_norm, r_mfvi)
+        w_eps_normalised = w_eps_mfvi / w_eps_norm
+        w_r_mfvi = torch.randn(1)
 
-        log_posterior = -torch.sum(torch.log(w_std))
-        log_prior = self.prior.log_likelihood(w)
-        self.kl_divergence = log_posterior - log_prior
+        # draw bias from radial distribution
+        bias_eps_mfvi = self.epsilon_normal.sample(self.bias_mu.size())
+        bias_eps_norm = torch.norm(bias_eps_mfvi, p=2, dim=0)
 
-        return F.linear(x, w)
+        bias_eps_normalised = bias_eps_mfvi / bias_eps_norm
+        bias_r_mfvi = torch.randn(1)
+
+        # calculate weight and bias
+        w = torch.addcmul(self.w_mu, w_eps_normalised, w_r_mfvi)
+        bias = torch.addcmul(self.bias_mu, bias_eps_normalised, bias_r_mfvi)
+
+        # calculate log probabilities
+        w_log_posterior = -torch.sum(torch.log(w_std))
+        bias_log_posterior = -torch.sum(torch.log(bias_std))
+
+        w_log_prior = self.prior.log_likelihood(w)
+        bias_log_prior = self.prior.log_likelihood(bias)
+
+        total_log_posterior = w_log_posterior + bias_log_posterior
+        total_log_prior = w_log_prior + bias_log_prior
+
+        # calculate kl divergence
+        self.kl_divergence = total_log_posterior - total_log_prior
+
+        return F.linear(x, w, bias)
