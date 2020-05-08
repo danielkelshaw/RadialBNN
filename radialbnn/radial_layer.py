@@ -65,25 +65,6 @@ class RadialLayer(nn.Module):
 
         log_posterior = -torch.sum(torch.log(w_std))
         log_prior = self.prior.log_likelihood(w)
-        self.kl_divergence = self.kld(log_prior, log_posterior)
+        self.kl_divergence = log_posterior - log_prior
 
         return F.linear(x, w)
-
-    def kld(self, log_prior: Tensor, log_posterior: Tensor) -> Tensor:
-
-        """Calculates the KL Divergence.
-
-        Parameters
-        ----------
-        log_prior : Tensor
-            Log likelihood drawn from the prior.
-        log_posterior : Tensor
-            Log likelihood drawn from the posetior.
-
-        Returns
-        -------
-        Tensor
-            Calculated KL Divergence.
-        """
-
-        return log_posterior - log_prior
