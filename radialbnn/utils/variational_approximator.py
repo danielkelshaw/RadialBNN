@@ -51,7 +51,7 @@ def variational_approximator(model: nn.Module) -> nn.Module:
              targets: Tensor,
              criterion: Any,
              n_samples: int,
-             w_complexity: float) -> Tensor:
+             w_complexity: float = 1.0) -> Tensor:
 
         """Samples the ELBO loss for a given batch of data.
 
