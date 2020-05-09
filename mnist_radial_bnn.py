@@ -18,9 +18,9 @@ class RadialBayesianNetwork(nn.Module):
 
         super().__init__()
 
-        self.rl1 = RadialLayer(input_dim, 200)
-        self.rl2 = RadialLayer(200, 200)
-        self.rl3 = RadialLayer(200, output_dim)
+        self.rl1 = RadialLayer(input_dim, 1200)
+        self.rl2 = RadialLayer(1200, 1200)
+        self.rl3 = RadialLayer(1200, output_dim)
 
     def forward(self, x):
 
@@ -33,9 +33,10 @@ class RadialBayesianNetwork(nn.Module):
         return x
 
 
-def train(model, trainloader, optimiser, epoch, device):
+def train(args, model, trainloader, optimiser, epoch, device):
 
     train_loss = 0.0
+    wc = 1 / (len(trainloader.dataset) // args.batch_size)
 
     model.train()
     for batch_idx, (data, labels) in enumerate(trainloader):
@@ -44,7 +45,7 @@ def train(model, trainloader, optimiser, epoch, device):
         optimiser.zero_grad()
 
         outputs = model(data)
-        loss = model.elbo(data, labels, criterion, n_samples=5)
+        loss = model.elbo(data, labels, criterion, n_samples=5, w_complexity=wc)
         train_loss += loss.item() * data.size(0)
 
         loss.backward()
@@ -83,14 +84,14 @@ if __name__ == '__main__':
         description='Radial BNN - MNIST Classification Example.'
     )
 
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
-                        help='input batch size for training (default: 64)')
+    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+                        help='input batch size for training (default: 128)')
     parser.add_argument('--testbatch-size', type=int, default=1000, metavar='N',
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=100, metavar='N',
                         help='number of epochs to train (default: 100)')
-    parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
-                        help='learning rate (default: 0.1)')
+    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+                        help='learning rate (default: 0.001)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training (default: false)')
 
@@ -127,7 +128,7 @@ if __name__ == '__main__':
                                              **kwargs)
 
     model = RadialBayesianNetwork(28 * 28, 10).to(device)
-    optimiser = torch.optim.SGD(model.parameters(), lr=args.lr)
+    optimiser = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss(reduction='sum')
 
     # prepare results file
@@ -138,7 +139,7 @@ if __name__ == '__main__':
 
     # run training
     for epoch in range(1, args.epochs + 1):
-        train_loss = train(model, trainloader, optimiser, epoch, device)
+        train_loss = train(args, model, trainloader, optimiser, epoch, device)
         test_loss, accuracy = test(model, testloader, device)
 
         _results = [epoch, train_loss, test_loss, accuracy]
