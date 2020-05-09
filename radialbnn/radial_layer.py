@@ -42,7 +42,7 @@ class RadialLayer(nn.Module):
         self.bias_rho = nn.Parameter(bias_rho)
 
         self.prior = Gaussian(0, 1)
-        self.epsilon_normal = torch.distributions.Normal(0, 1)
+        self.epsilon_normal = torch.distributions.Normal(0, 0.5)
 
         self.kl_divergence = 0.0
 
@@ -61,23 +61,25 @@ class RadialLayer(nn.Module):
             Output from the Radial Linear Layer.
         """
 
+        device = self.w_mu.device
+
         # calculating sigma from rho
         w_std = torch.log(1 + torch.exp(self.w_rho))
         bias_std = torch.log(1 + torch.exp(self.bias_rho))
 
         # draw weight from radial distribution
-        w_eps_mfvi = self.epsilon_normal.sample(self.w_mu.size())
+        w_eps_mfvi = self.epsilon_normal.sample(self.w_mu.size()).to(device)
         w_eps_norm = torch.norm(w_eps_mfvi, p=2, dim=0)
 
         w_eps_normalised = w_eps_mfvi / w_eps_norm
-        w_r_mfvi = torch.randn(1)
+        w_r_mfvi = torch.randn(1).to(device)
 
         # draw bias from radial distribution
-        bias_eps_mfvi = self.epsilon_normal.sample(self.bias_mu.size())
+        bias_eps_mfvi = self.epsilon_normal.sample(self.bias_mu.size()).to(device)
         bias_eps_norm = torch.norm(bias_eps_mfvi, p=2, dim=0)
 
         bias_eps_normalised = bias_eps_mfvi / bias_eps_norm
-        bias_r_mfvi = torch.randn(1)
+        bias_r_mfvi = torch.randn(1).to(device)
 
         # calculate weight and bias
         w = torch.addcmul(self.w_mu, w_eps_normalised, w_r_mfvi)

@@ -50,7 +50,8 @@ def variational_approximator(model: nn.Module) -> nn.Module:
              inputs: Tensor,
              targets: Tensor,
              criterion: Any,
-             n_samples: int) -> Tensor:
+             n_samples: int,
+             w_complexity: float) -> Tensor:
 
         """Samples the ELBO loss for a given batch of data.
 
@@ -78,7 +79,8 @@ def variational_approximator(model: nn.Module) -> nn.Module:
         loss = 0
         for sample in range(n_samples):
             outputs = self(inputs)
-            loss += criterion(outputs, targets) + self.kl_divergence()
+            loss += criterion(outputs, targets)
+            loss += w_complexity * self.kl_divergence()
 
         return loss / n_samples
 
