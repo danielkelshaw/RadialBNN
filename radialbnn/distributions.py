@@ -43,4 +43,5 @@ class Gaussian(nn.Module):
         log_exp = ((w - self.mu) ** 2) / (2 * self.sigma ** 2)
         log_posterior = -log_const - torch.log(self.sigma) - log_exp
 
-        return log_posterior.sum()
+        # return log_posterior.sum()
+        return torch.sum(torch.mean(log_posterior, dim=0))
