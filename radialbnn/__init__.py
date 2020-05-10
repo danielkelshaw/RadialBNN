@@ -1,2 +1,2 @@
-from .utils.variational_approximator import variational_approximator
+from .utils.elbo_approximator import elbo_approximator
 from .radial_layer import RadialLayer
