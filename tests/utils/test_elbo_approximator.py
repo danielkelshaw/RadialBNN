@@ -3,7 +3,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from radialbnn import RadialLayer, variational_approximator
+from radialbnn import RadialLayer, elbo_approximator
 
 
 class TestVariationalApproximator:
@@ -11,7 +11,7 @@ class TestVariationalApproximator:
     @pytest.fixture
     def basic_model(self):
 
-        @variational_approximator
+        @elbo_approximator
         class Model(nn.Module):
 
             def __init__(self):

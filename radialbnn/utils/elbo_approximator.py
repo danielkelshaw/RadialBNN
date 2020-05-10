@@ -6,19 +6,19 @@ from torch import Tensor
 from ..radial_layer import RadialLayer
 
 
-def variational_approximator(model: nn.Module) -> nn.Module:
+def elbo_approximator(model: nn.Module) -> nn.Module:
 
-    """Adds Variational Inference functionality to a nn.Module.
+    """Adds ability to calculate ELBO to a nn.Module.
 
     Parameters
     ----------
     model : nn.Module
-        Model to use variational approximation with.
+        Model to calculate the ELBO loss for.
 
     Returns
     -------
     model : nn.Module
-        Model with additional variational approximation functionality.
+        Model with ELBO calculation functionality.
     """
 
     def kl_divergence(self) -> Tensor:

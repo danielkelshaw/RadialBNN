@@ -8,10 +8,10 @@ from torchvision import datasets
 from torchvision import transforms
 
 from radialbnn.radial_layer import RadialLayer
-from radialbnn.utils.variational_approximator import variational_approximator
+from radialbnn.utils.elbo_approximator import elbo_approximator
 
 
-@variational_approximator
+@elbo_approximator
 class RadialBayesianNetwork(nn.Module):
 
     def __init__(self, input_dim, output_dim):
